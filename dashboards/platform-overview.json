@@ -1,0 +1,26 @@
+{
+  "title": "Platform Observability Overview",
+  "tags": ["platform-engineering", "sre", "opentelemetry"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "HTTP Success Ratio",
+      "targets": [
+        {"expr": "service:http_success_ratio:5m", "legendFormat": "{{service_name}}"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "Error Budget Burn",
+      "targets": [
+        {"expr": "service:http_error_budget_burn:5m", "legendFormat": "{{service_name}}"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 1024
+    spike_limit_mib: 256
+  k8sattributes:
+    auth_type: serviceAccount
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.deployment.name
+        - k8s.pod.name
+        - k8s.node.name
+  resource:
+    attributes:
+      - key: platform.owner
+        value: platform-observability
+        action: upsert
+  batch:
+    send_batch_size: 8192
+    timeout: 5s
+
+exporters:
+  prometheusremotewrite:
+    endpoint: ${env:PROM_REMOTE_WRITE_ENDPOINT}
+    resource_to_telemetry_conversion:
+      enabled: true
+  otlphttp/traces:
+    endpoint: ${env:OTLP_TRACE_ENDPOINT}
+  debug:
+    verbosity: basic
+
+service:
+  telemetry:
+    logs:
+      level: info
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, k8sattributes, resource, batch]
+      exporters: [prometheusremotewrite]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, k8sattributes, resource, batch]
+      exporters: [otlphttp/traces]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, k8sattributes, resource, batch]
+      exporters: [debug]

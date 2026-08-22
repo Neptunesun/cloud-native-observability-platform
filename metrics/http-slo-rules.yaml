@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: service-slo-rules
+  namespace: monitoring
+spec:
+  groups:
+    - name: service-slos
+      rules:
+        - record: service:http_success_ratio:5m
+          expr: |
+            sum by (service_name) (rate(http_server_request_duration_seconds_count{http_response_status_code!~"5.."}[5m]))
+            /
+            sum by (service_name) (rate(http_server_request_duration_seconds_count[5m]))
+        - record: service:http_error_budget_burn:5m
+          expr: (1 - service:http_success_ratio:5m) / (1 - 0.999)
+        - alert: ServiceErrorBudgetFastBurn
+          expr: service:http_error_budget_burn:5m > 14.4
+          for: 5m
+          labels:
+            severity: critical
+            owner: sre
+          annotations:
+            summary: '{{ $labels.service_name }} is burning error budget rapidly'
+            description: '5-minute burn rate is {{ $value | humanize }}x the allowed 99.9% SLO budget.'
